@@ -6,6 +6,8 @@ const API_CONFIG = {
   isLocal: process.env.REACT_APP_USE_LOCAL_BACKEND === 'true',
   isDebug: process.env.REACT_APP_DEBUG_API === 'true',
   localBaseUrl: process.env.REACT_APP_LOCAL_API_BASE_URL || 'http://localhost:5000',
+  useMockServer: process.env.REACT_APP_USE_MOCK_SERVER === 'true',
+  mockServerUrl: process.env.REACT_APP_MOCK_SERVER_URL || 'http://localhost:3002',
   
   // Endpoint configurations
   endpoints: {
@@ -23,7 +25,13 @@ const API_CONFIG = {
 
   // Get the appropriate base URL
   getBaseUrl() {
-    return this.isLocal ? this.localBaseUrl : '';
+    if (this.isLocal) {
+      return this.localBaseUrl;
+    } else if (this.useMockServer) {
+      return this.mockServerUrl;
+    } else {
+      return ''; // Production Vercel (same domain)
+    }
   },
 
   // Get the appropriate endpoint

@@ -34,6 +34,18 @@ EOF
     echo "🚀 Ready for deployment or testing with Vercel functions"
 }
 
+switch_to_mock() {
+    cat > "$ENV_FILE" << EOF
+# Environment Configuration for Mock Vercel Server
+REACT_APP_USE_LOCAL_BACKEND=false
+REACT_APP_USE_MOCK_SERVER=true
+REACT_APP_MOCK_SERVER_URL=http://localhost:3002
+REACT_APP_DEBUG_API=true
+EOF
+    echo "✅ Switched to MOCK VERCEL mode (local serverless simulation)"
+    echo "🧪 Use npm run dev:vercel-mock to test serverless behavior locally"
+}
+
 remove_config() {
     if [ -f "$ENV_FILE" ]; then
         rm "$ENV_FILE"
@@ -50,6 +62,9 @@ case "$1" in
         ;;
     "vercel"|"v"|"production"|"p")
         switch_to_vercel
+        ;;
+    "mock"|"m")
+        switch_to_mock
         ;;
     "remove"|"r"|"default"|"d")
         remove_config
