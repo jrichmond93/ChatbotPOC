@@ -1,0 +1,21 @@
+{
+  "name": "fullstack-react-python",
+  "version": "1.0.0",
+  "description": "Full-stack application with React frontend and Python backend",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run client\" \"npm run server\"",
+    "client": "cd frontend && npm start",
+    "server": "cd backend && python app.py",
+    "install-client": "cd frontend && npm install",
+    "install-server": "cd backend && pip install -r requirements.txt",
+    "install-all": "npm run install-client && npm run install-server",
+    "build": "cd frontend && npm run build"
+  },
+  "keywords": ["react", "python", "flask", "fullstack", "chatbot", "conversation-memory"],
+  "author": "Developer Reference Implementation",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
