@@ -124,30 +124,74 @@ npm run install-all
 
 ## Running the Application
 
-### Development Mode (Recommended)
+> **🎯 Smart Environment System**: This app automatically switches between local Flask backend and Vercel serverless functions. See [Environment Configuration Guide](ENVIRONMENT_CONFIGURATION.md) for details.
 
-Run both frontend and backend concurrently:
+### Local Development (Full Backend - Recommended)
 ```bash
-npm run dev
+npm run dev:local          # Auto-configures for Flask + starts both servers
+```
+- ✅ Full conversation memory persistence
+- ✅ All features working
+- ✅ Real backend with debugging
+
+### Vercel Testing (Serverless Functions)
+```bash
+npm run dev:vercel         # Auto-configures for Vercel + starts React only  
+```
+- ✅ Tests production deployment behavior
+- ⚠️ No conversation persistence between messages
+
+### Manual Control
+```bash
+npm run dev               # Use current configuration
+npm run client           # Frontend only
+npm run server           # Backend only
+npm run env:show         # Check current environment
 ```
 
-This will start:
-- React frontend on http://localhost:3000
-- Flask backend on http://localhost:5000
+## � Deployment
 
-### Running Separately
+### Vercel Deployment (Recommended)
 
-**Frontend only:**
-```bash
-npm run client
+This application is **Vercel-ready** with automatic deployment configuration.
+
+#### Quick Deploy
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyour-username%2FChatbotPOC)
+
+#### Manual Deployment Steps
+1. **Push to GitHub**: Commit your project to a GitHub repository
+2. **Connect to Vercel**: 
+   - Visit [vercel.com](https://vercel.com) and sign in
+   - Click "New Project" and import your repository
+3. **Configure Build Settings**:
+   - **Build Command**: `cd frontend && npm run build`
+   - **Output Directory**: `frontend/build`
+   - **Install Command**: `cd frontend && npm install`
+4. **Deploy**: Click "Deploy" - Done! ✨
+
+#### What Gets Deployed
+- ✅ **React Frontend**: Static files served via CDN
+- ✅ **Python API**: Serverless functions at `/api/*`
+- ✅ **Chatbot Backend**: Full conversation memory system
+- ✅ **HTTPS**: Automatic SSL certificates
+- ✅ **Global CDN**: Fast worldwide access
+
+#### Deployment Architecture
+```
+Frontend (Static) → Vercel CDN
+Backend APIs → Python Serverless Functions
+- /api/chat → Conversation handling
+- /api/suggestions → Smart suggestions
 ```
 
-**Backend only:**
-```bash
-npm run server
-```
+**📋 For detailed deployment instructions, see [`VERCEL_DEPLOYMENT.md`](./VERCEL_DEPLOYMENT.md)**
 
-## 🔌 API Endpoints
+### Alternative Deployments
+- **Frontend Only**: Deploy to Netlify, GitHub Pages, or any static host
+- **Full-Stack**: Railway, Render, Heroku (with Docker)
+- **Enterprise**: AWS, Google Cloud, Azure with container orchestration
+
+## �🔌 API Endpoints
 
 ### Task Management API
 - `GET /api/health` - Health check endpoint
@@ -286,6 +330,8 @@ The current system uses **in-memory storage** with Python dictionaries, which pr
 - ✅ All conversation memory features working
 - ⚠️ Data lost on server restart
 - ⚠️ Not suitable for production scale
+
+> **🚨 Vercel Deployment Note**: When deployed to Vercel, serverless functions reset between calls, so conversations won't persist between requests. For production deployments with persistent memory, implement one of the database solutions below.
 
 ### Production Database Upgrade Path
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import API_CONFIG from './apiConfig';
 import './ChatBot.css';
 
 const ChatBot = ({ 
@@ -94,26 +95,20 @@ const ChatBot = ({
 
   const fetchSuggestions = async (isFollowup = false) => {
     try {
-      let url = '/api/chatbot/suggestions';
-      const params = new URLSearchParams();
-      
-      if (stockData) {
-        params.append('stock', stockData.symbol);
-      }
-      
-      if (isFollowup || conversationStarted) {
-        params.append('followup', 'true');
-      }
+      const requestConfig = API_CONFIG.formatSuggestionsRequest(
+        isFollowup || conversationStarted,
+        stockData,
+        sessionId
+      );
 
-      if (sessionId) {
-        params.append('sessionId', sessionId);
+      API_CONFIG.logApiCall('suggestions', requestConfig.method, requestConfig.url, requestConfig.data);
+
+      let response;
+      if (requestConfig.method === 'GET') {
+        response = await axios.get(requestConfig.url);
+      } else {
+        response = await axios.post(requestConfig.url, requestConfig.data);
       }
-      
-      if (params.toString()) {
-        url += '?' + params.toString();
-      }
-      
-      const response = await axios.get(url);
       setSuggestions(response.data.suggestions || []);
       setShowSuggestions(true);
       
@@ -124,6 +119,8 @@ const ChatBot = ({
       }
     } catch (error) {
       console.error('Error fetching suggestions:', error);
+      console.error('Suggestions error details:', error.response?.data || error.message);
+      console.error('Suggestions request URL:', error.config?.url);
       setSuggestions([]);
     }
   };
@@ -151,12 +148,13 @@ const ChatBot = ({
     setShowSuggestions(false); // Hide suggestions while processing
 
     try {
-      // Send message to backend with conversation memory
-      const response = await axios.post('/api/chatbot/message', {
-        message: textToSend,
-        sessionId: sessionId,
-        stockContext: stockData
-      });
+      // Send message to backend with conversation memory using environment-aware config
+      const chatUrl = API_CONFIG.getUrl('chat');
+      const requestData = API_CONFIG.formatChatRequest(textToSend, sessionId, stockData);
+      
+      API_CONFIG.logApiCall('chat', 'POST', chatUrl, requestData);
+
+      const response = await axios.post(chatUrl, requestData);
 
       // Add bot response from backend
       const botResponse = {
@@ -182,11 +180,14 @@ const ChatBot = ({
 
     } catch (error) {
       console.error('Error sending message:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      console.error('Request URL:', error.config?.url);
+      console.error('Request method:', error.config?.method);
       
       // Fallback to local response if API fails
       const fallbackResponse = {
         id: Date.now() + 1,
-        text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
+        text: `I'm sorry, I'm having trouble connecting right now. Error: ${error.message}. Please check the console for details.`,
         sender: 'bot',
         timestamp: new Date()
       };

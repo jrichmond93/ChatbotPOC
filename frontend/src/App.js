@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import StockTickers from './StockTickers';
 import ChatBot from './ChatBot';
+import EnvironmentSwitcher from './EnvironmentSwitcher';
 import './App.css';
 
 function App() {
@@ -260,6 +261,9 @@ function App() {
         size={chatSize}
         onSizeUpdate={handleChatSizeUpdate}
       />
+      
+      {/* Environment indicator */}
+      <EnvironmentSwitcher />
     </div>
   );
 }

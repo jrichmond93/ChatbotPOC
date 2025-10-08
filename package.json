@@ -5,12 +5,17 @@
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run client\" \"npm run server\"",
+    "dev:local": "npm run env:local && npm run dev",
+    "dev:vercel": "npm run env:vercel && npm run client",
     "client": "cd frontend && npm start",
     "server": "cd backend && python app.py",
     "install-client": "cd frontend && npm install",
     "install-server": "cd backend && pip install -r requirements.txt",
     "install-all": "npm run install-client && npm run install-server",
-    "build": "cd frontend && npm run build"
+    "build": "cd frontend && npm run build",
+    "env:local": "bash switch-env.sh local",
+    "env:vercel": "bash switch-env.sh vercel",
+    "env:show": "bash switch-env.sh show"
   },
   "keywords": ["react", "python", "flask", "fullstack", "chatbot", "conversation-memory"],
   "author": "Developer Reference Implementation",
