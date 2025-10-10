@@ -253,6 +253,16 @@ const ChatBot = ({
       console.error('Error calling external API:', error);
       console.error('Request URL:', apiUrl);
       console.error('Request Data:', requestData);
+      
+      // Enhanced error logging for CORS and connection issues
+      if (error.code === 'ERR_NETWORK') {
+        console.error('❌ Network Error: Unable to reach API server');
+        console.error('Check if API server is running and accessible');
+      } else if (error.message?.includes('CORS')) {
+        console.error('❌ CORS Error: API server needs to allow requests from this domain');
+        console.error('Current domain:', window.location.origin);
+      }
+      
       API_CONFIG.debug('API Error Details:', {
         url: apiUrl,
         requestData,

@@ -2,8 +2,20 @@
 // Handles integration with external .NET API
 
 const API_CONFIG = {
-  // External API configuration
-  baseUrl: process.env.REACT_APP_EXTERNAL_API_BASE_URL || 'https://your-api-domain.com',
+  // External API configuration with fallback protection
+  baseUrl: (() => {
+    let url = process.env.REACT_APP_EXTERNAL_API_BASE_URL || 
+              process.env.REACT_APP_API_BASE_URL || 
+              'https://chat.aistocktickers.com';
+    
+    // Ensure we never use placeholder URLs
+    if (url.includes('your-api-domain.com')) {
+      console.warn('⚠️ Detected placeholder API URL, using production fallback');
+      url = 'https://chat.aistocktickers.com';
+    }
+    
+    return url;
+  })(),
   isDebug: process.env.REACT_APP_DEBUG_API === 'true',
   
   // API endpoints
@@ -23,6 +35,13 @@ const API_CONFIG = {
     
     const fullUrl = `${cleanBaseUrl}${cleanEndpoint}`;
     this.debug(`Constructed URL for ${endpoint}:`, fullUrl);
+    
+    // Validate final URL
+    if (fullUrl.includes('your-api-domain.com')) {
+      console.error('❌ Invalid API URL detected:', fullUrl);
+      throw new Error('Invalid API configuration - placeholder URL detected');
+    }
+    
     return fullUrl;
   },
 
