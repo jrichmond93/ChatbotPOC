@@ -1,24 +1,52 @@
 {
-  "name": "chatbot-poc-frontend",
+  "name": "chatbot-poc",
   "version": "1.0.0",
-  "description": "React chatbot application with external .NET API integration",
-  "main": "index.js",
+  "private": true,
+  "description": "AI-powered chatbot with stock integration and conversation memory - frontend-only React application",
   "scripts": {
-    "start": "cd frontend && npm start",
-    "dev": "cd frontend && npm start",
-    "build": "cd frontend && npm run build",
-    "install-deps": "cd frontend && npm install",
-    "test": "cd frontend && npm test",
-    "env:show": "echo External API Mode - check frontend/.env.local for configuration"
+    "start": "react-scripts start",
+    "dev": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.4.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   },
   "keywords": [
     "react",
-    "frontend",
     "chatbot",
+    "stock-integration",
     "external-api",
     "conversation-memory",
-    "session-management"
+    "frontend-only",
+    "vercel"
   ],
-  "author": "Developer Reference Implementation",
+  "author": "Your Name <your.email@example.com>",
   "license": "MIT"
 }
