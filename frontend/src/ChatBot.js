@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import API_CONFIG from './externalApiConfig';
 import './ChatBot.css';
 
 const ChatBot = ({ 
@@ -23,6 +24,10 @@ const ChatBot = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  
+  // Unrelated topic count and session lock state
+  const [unrelatedTopicCount, setUnrelatedTopicCount] = useState(0);
+  const [isSessionLocked, setIsSessionLocked] = useState(false);
 
   // Initialize messages if empty with useMemo to prevent re-renders
   const currentMessages = useMemo(() => {
@@ -70,12 +75,27 @@ const ChatBot = ({
   // Initialize session and fetch suggestions when chatbot opens
   useEffect(() => {
     if (isOpen) {
-      // Generate session ID if not exists
-      if (!sessionId) {
-        const newSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        onSessionUpdate && onSessionUpdate(newSessionId, conversationSummary, conversationStarted);
-      }
+      // Reset sessionId when chat opens - API will create new session on first message
+      onSessionUpdate && onSessionUpdate(0, '', false);
+      
+      // Reset unrelated topic count and session lock (new session starts with count = 0)
+      setUnrelatedTopicCount(0);
+      setIsSessionLocked(false);
+      
+      API_CONFIG.debug('Chat opened - sessionId and unrelatedTopicCount reset to 0');
+      
+      // Note: sessionId will be created by the API if missing or 0
+      // We'll let the first API call establish the session
       fetchSuggestions();
+    } else {
+      // Reset sessionId when chat closes
+      onSessionUpdate && onSessionUpdate(0, '', false);
+      
+      // Reset unrelated topic count and session lock
+      setUnrelatedTopicCount(0);
+      setIsSessionLocked(false);
+      
+      API_CONFIG.debug('Chat closed - sessionId and unrelatedTopicCount reset to 0');
     }
   }, [isOpen, stockData]);
 
@@ -94,36 +114,46 @@ const ChatBot = ({
 
   const fetchSuggestions = async (isFollowup = false) => {
     try {
-      let url = '/api/chatbot/suggestions';
-      const params = new URLSearchParams();
+      // Generate default suggestions based on context
+      let defaultSuggestions = [];
       
-      if (stockData) {
-        params.append('stock', stockData.symbol);
+      if (stockData && !isFollowup) {
+        // Stock-specific initial suggestions
+        defaultSuggestions = [
+          `What's the outlook for ${stockData.symbol}?`,
+          `Tell me about ${stockData.symbol}'s recent performance`,
+          `What are analysts saying about ${stockData.symbol}?`
+        ];
+      } else if (stockData && isFollowup) {
+        // Stock-specific follow-up suggestions
+        defaultSuggestions = [
+          `What's the long-term forecast for ${stockData.symbol}?`,
+          `How does ${stockData.symbol} compare to competitors?`,
+          `What are the key risks for ${stockData.symbol}?`
+        ];
+      } else if (!stockData && isFollowup) {
+        // General follow-up suggestions
+        defaultSuggestions = [
+          "Can you explain that in more detail?",
+          "What else should I know?",
+          "How does this apply to my situation?"
+        ];
+      } else {
+        // General initial suggestions
+        defaultSuggestions = [
+          "What's the market outlook today?",
+          "Tell me about popular stocks",
+          "What should I know about investing?"
+        ];
       }
       
-      if (isFollowup || conversationStarted) {
-        params.append('followup', 'true');
-      }
-
-      if (sessionId) {
-        params.append('sessionId', sessionId);
-      }
-      
-      if (params.toString()) {
-        url += '?' + params.toString();
-      }
-      
-      const response = await axios.get(url);
-      setSuggestions(response.data.suggestions || []);
+      setSuggestions(defaultSuggestions);
       setShowSuggestions(true);
       
-      // Update conversation summary if provided
-      if (response.data.conversationContext && response.data.conversationContext.summary) {
-        const newSummary = response.data.conversationContext.summary;
-        onSessionUpdate && onSessionUpdate(sessionId, newSummary, conversationStarted);
-      }
+      API_CONFIG.debug('Default suggestions loaded:', defaultSuggestions);
+      
     } catch (error) {
-      console.error('Error fetching suggestions:', error);
+      console.error('Error setting suggestions:', error);
       setSuggestions([]);
     }
   };
@@ -135,7 +165,7 @@ const ChatBot = ({
   const sendMessage = async (e, messageText = null) => {
     e?.preventDefault();
     const textToSend = messageText || inputMessage;
-    if (!textToSend.trim()) return;
+    if (!textToSend.trim() || isSessionLocked) return;
 
     const userMessage = {
       id: Date.now(),
@@ -150,18 +180,44 @@ const ChatBot = ({
     setIsTyping(true);
     setShowSuggestions(false); // Hide suggestions while processing
 
+    // Prepare request for external API (declare outside try block for error handling)
+    const userId = process.env.REACT_APP_DEFAULT_USER_ID || '123';
+    const ticker = stockData?.symbol || '';
+    const apiUrl = API_CONFIG.getUrl('chat');
+    const requestData = API_CONFIG.formatChatRequest(
+      textToSend,
+      userId,
+      ticker,
+      conversationSummary,
+      sessionId // Pass current sessionId (null/0 will create new session)
+    );
+
     try {
-      // Send message to backend with conversation memory
-      const response = await axios.post('/api/chatbot/message', {
-        message: textToSend,
-        sessionId: sessionId,
-        stockContext: stockData
+
+      API_CONFIG.logApiCall('chat', 'POST', apiUrl, requestData);
+      API_CONFIG.debug('Session Info:', { 
+        currentSessionId: sessionId, 
+        willCreateNew: !sessionId || sessionId === 0 
       });
 
-      // Add bot response from backend
+      // Send message to external API
+      const response = await axios.post(apiUrl, requestData, {
+        headers: {
+          'Content-Type': 'application/json',
+          // Add any required authentication headers here
+          // 'Authorization': 'Bearer ' + process.env.REACT_APP_API_TOKEN
+        }
+      });
+
+      // Handle API response
+      const apiResult = API_CONFIG.handleResponse(response.data);
+      API_CONFIG.debug('Session ID received:', apiResult.sessionId);
+      API_CONFIG.debug('Unrelated Topic Count:', apiResult.unrelatedTopicCount);
+      
+      // Add bot response (always display the message)
       const botResponse = {
         id: Date.now() + 1,
-        text: response.data.response,
+        text: apiResult.reply,
         sender: 'bot',
         timestamp: new Date()
       };
@@ -170,35 +226,68 @@ const ChatBot = ({
       onMessagesUpdate && onMessagesUpdate(updatedMessages);
       setIsTyping(false);
       
-      // Update session data
-      const newSessionId = response.data.sessionId || sessionId;
-      const newConversationSummary = response.data.conversationSummary || conversationSummary;
+      // Update unrelated topic count
+      setUnrelatedTopicCount(apiResult.unrelatedTopicCount);
+      
+      // Lock session if unrelated topic count >= 3
+      if (apiResult.unrelatedTopicCount >= 3) {
+        setIsSessionLocked(true);
+        setShowSuggestions(false); // Hide suggestions when locked
+        API_CONFIG.debug('Session locked due to unrelated topic limit reached');
+      }
+      
+      // Update session data with external API response
+      const newConversationSummary = apiResult.summary || conversationSummary;
       const newConversationStarted = true;
+      const newSessionId = apiResult.sessionId || sessionId; // Use returned sessionId or keep current
       
       onSessionUpdate && onSessionUpdate(newSessionId, newConversationSummary, newConversationStarted);
       
-      // Fetch new follow-up suggestions after bot responds
-      await fetchSuggestions(true);
+      // Set suggestions from external API response (only if not locked)
+      if (!isSessionLocked && apiResult.suggestions && apiResult.suggestions.length > 0) {
+        setSuggestions(apiResult.suggestions);
+        setShowSuggestions(true);
+      }
 
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error calling external API:', error);
+      console.error('Request URL:', apiUrl);
+      console.error('Request Data:', requestData);
+      API_CONFIG.debug('API Error Details:', {
+        url: apiUrl,
+        requestData,
+        error: error.response?.data || error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
       
-      // Fallback to local response if API fails
+      // Handle error response from external API
+      const errorResult = API_CONFIG.handleError(error);
+      
       const fallbackResponse = {
         id: Date.now() + 1,
-        text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
+        text: errorResult.reply,
         sender: 'bot',
         timestamp: new Date()
       };
 
       const fallbackMessages = [...newMessages, fallbackResponse];
       onMessagesUpdate && onMessagesUpdate(fallbackMessages);
+      
+      // Set error suggestions if available
+      if (errorResult.suggestions && errorResult.suggestions.length > 0) {
+        setSuggestions(errorResult.suggestions);
+        setShowSuggestions(true);
+      }
+      
       setIsTyping(false);
     }
   };
 
   const handleSuggestionClick = (suggestion) => {
-    sendMessage(null, suggestion);
+    if (!isSessionLocked) {
+      sendMessage(null, suggestion);
+    }
   };
 
   const clearChat = () => {
@@ -214,9 +303,16 @@ const ChatBot = ({
     ];
     
     onMessagesUpdate && onMessagesUpdate(resetMessages);
-    onSessionUpdate && onSessionUpdate(null, '', false); // Reset session data
+    onSessionUpdate && onSessionUpdate(0, '', false); // Reset session data with sessionId = 0
+    
+    // Reset unrelated topic count and session lock (new session starts with count = 0)
+    setUnrelatedTopicCount(0);
+    setIsSessionLocked(false);
+    
     setShowSuggestions(true);
     fetchSuggestions(false); // Fetch initial suggestions when clearing
+    
+    API_CONFIG.debug('Chat cleared - sessionId and unrelatedTopicCount reset to 0');
   };
 
   const toggleMinimize = () => {
@@ -332,8 +428,8 @@ const ChatBot = ({
           <div className="chatbot-title">
             <div className="chatbot-avatar">🤖</div>
             <div>
-              <h3>AI Assistant</h3>
-              {stockData && !isMinimized && <span className="stock-context">Discussing {stockData.symbol}</span>}
+              <h3>{isSessionLocked ? 'Chat currently unavailable' : 'AI Assistant'}</h3>
+              {!isSessionLocked && stockData && !isMinimized && <span className="stock-context">Discussing {stockData.symbol}</span>}
             </div>
           </div>
           <div className="chatbot-controls">
@@ -380,7 +476,7 @@ const ChatBot = ({
             </div>
 
             {/* Quick Suggestions */}
-            {showSuggestions && suggestions.length > 0 && !isTyping && (
+            {showSuggestions && suggestions.length > 0 && !isTyping && !isSessionLocked && (
               <div className="chatbot-suggestions">
                 <div className="suggestions-header">
                   {currentMessages.length === 1 ? 'Quick suggestions:' : 'Continue the conversation:'}
@@ -392,6 +488,7 @@ const ChatBot = ({
                       key={`${suggestion}-${index}-${Date.now()}`}
                       onClick={() => handleSuggestionClick(suggestion)}
                       className="suggestion-button"
+                      disabled={isSessionLocked}
                     >
                       {suggestion}
                     </button>
@@ -406,11 +503,17 @@ const ChatBot = ({
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder={stockData ? `Ask about ${stockData.symbol}...` : "Type your message..."}
+                placeholder={
+                  isSessionLocked 
+                    ? "Chat unavailable - close and reopen to start new session" 
+                    : stockData 
+                      ? `Ask about ${stockData.symbol}...` 
+                      : "Type your message..."
+                }
                 className="chatbot-input"
-                disabled={isTyping}
+                disabled={isTyping || isSessionLocked}
               />
-              <button type="submit" className="send-button" disabled={isTyping || !inputMessage.trim()}>
+              <button type="submit" className="send-button" disabled={isTyping || !inputMessage.trim() || isSessionLocked}>
                 📤
               </button>
             </form>

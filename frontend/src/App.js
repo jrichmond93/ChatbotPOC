@@ -1,15 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import React, { useState, useCallback } from 'react';
 import StockTickers from './StockTickers';
 import ChatBot from './ChatBot';
 import './App.css';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('tasks'); // 'tasks' or 'stocks'
-  const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState('home'); // 'home' or 'stocks'
   
   // Chatbot state - persistent across page changes
   const [chatbotOpen, setChatbotOpen] = useState(false);
@@ -23,72 +18,13 @@ function App() {
   
   // Persistent chatbot UI state (position and size)
   const [chatPosition, setChatPosition] = useState(() => {
-    const defaultX = Math.max(20, window.innerWidth - 420);
-    const defaultY = 20;
-    return { x: defaultX, y: defaultY };
+    const chatWidth = 400;
+    const chatHeight = 500;
+    const centerX = Math.max(20, (window.innerWidth - chatWidth) / 2);
+    const centerY = Math.max(20, (window.innerHeight - chatHeight) / 2);
+    return { x: centerX, y: centerY };
   });
   const [chatSize, setChatSize] = useState({ width: 400, height: 500 });
-
-  // Fetch tasks from backend
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
-  const fetchTasks = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('/api/tasks');
-      setTasks(response.data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch tasks. Make sure the backend is running.');
-      console.error('Error fetching tasks:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addTask = async (e) => {
-    e.preventDefault();
-    if (!newTask.trim()) return;
-
-    try {
-      const response = await axios.post('/api/tasks', {
-        title: newTask
-      });
-      setTasks([...tasks, response.data]);
-      setNewTask('');
-    } catch (err) {
-      setError('Failed to add task');
-      console.error('Error adding task:', err);
-    }
-  };
-
-  const toggleTask = async (taskId) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    try {
-      const response = await axios.put(`/api/tasks/${taskId}`, {
-        ...task,
-        completed: !task.completed
-      });
-      setTasks(tasks.map(t => t.id === taskId ? response.data : t));
-    } catch (err) {
-      setError('Failed to update task');
-      console.error('Error updating task:', err);
-    }
-  };
-
-  const deleteTask = async (taskId) => {
-    try {
-      await axios.delete(`/api/tasks/${taskId}`);
-      setTasks(tasks.filter(t => t.id !== taskId));
-    } catch (err) {
-      setError('Failed to delete task');
-      console.error('Error deleting task:', err);
-    }
-  };
 
   // Chatbot functions
   const openChatWithStock = (stockData) => {
@@ -126,20 +62,16 @@ function App() {
     setChatSize(newSize);
   }, []);
 
-  if (loading && currentPage === 'tasks') {
-    return <div className="App"><div className="loading">Loading...</div></div>;
-  }
-
   // Render Stock Tickers page
   if (currentPage === 'stocks') {
     return (
       <div className="App">
         <nav className="app-navigation">
           <button 
-            onClick={() => setCurrentPage('tasks')} 
-            className={currentPage === 'tasks' ? 'nav-button active' : 'nav-button'}
+            onClick={() => setCurrentPage('home')} 
+            className={currentPage === 'home' ? 'nav-button active' : 'nav-button'}
           >
-            📋 Task Manager
+            🏠 Home
           </button>
           <button 
             onClick={() => setCurrentPage('stocks')} 
@@ -149,6 +81,15 @@ function App() {
           </button>
         </nav>
         <StockTickers onOpenChat={openChatWithStock} />
+        
+        {/* Floating Chat Button - Global Access */}
+        <button 
+          className="floating-chat-button"
+          onClick={openGeneralChat}
+          title="Open AI Assistant"
+        >
+          💬
+        </button>
         
         {/* Chatbot - persistent across pages */}
         <ChatBot 
@@ -170,15 +111,15 @@ function App() {
     );
   }
 
-  // Render Tasks page
+  // Render Home page
   return (
     <div className="App">
       <nav className="app-navigation">
         <button 
-          onClick={() => setCurrentPage('tasks')} 
-          className={currentPage === 'tasks' ? 'nav-button active' : 'nav-button'}
+          onClick={() => setCurrentPage('home')} 
+          className={currentPage === 'home' ? 'nav-button active' : 'nav-button'}
         >
-          📋 Task Manager
+          🏠 Home
         </button>
         <button 
           onClick={() => setCurrentPage('stocks')} 
@@ -189,60 +130,30 @@ function App() {
       </nav>
       
       <header className="App-header">
-        <h1>Full-Stack React + Python App</h1>
-        <p>A simple task manager built with React frontend and Flask backend</p>
+        <h1>Stock Chat Assistant</h1>
+        <p>AI-powered chatbot with real-time stock data integration</p>
       </header>
 
       <main className="App-main">
-        {error && <div className="error">{error}</div>}
-        
-        <form onSubmit={addTask} className="task-form">
-          <input
-            type="text"
-            value={newTask}
-            onChange={(e) => setNewTask(e.target.value)}
-            placeholder="Enter a new task"
-            className="task-input"
-          />
-          <button type="submit" className="add-button">Add Task</button>
-        </form>
-
-        <div className="tasks-container">
-          <h2>Tasks ({tasks.length})</h2>
-          {tasks.length === 0 ? (
-            <p className="no-tasks">No tasks yet. Add one above!</p>
-          ) : (
-            <ul className="task-list">
-              {tasks.map(task => (
-                <li key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
-                  <span
-                    className="task-title"
-                    onClick={() => toggleTask(task.id)}
-                  >
-                    {task.title}
-                  </span>
-                  <button
-                    onClick={() => deleteTask(task.id)}
-                    className="delete-button"
-                  >
-                    Delete
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
         {/* Start Chat Button */}
         <div className="chat-section">
           <button onClick={openGeneralChat} className="start-chat-button">
             💬 Start Chat with AI Assistant
           </button>
           <p className="chat-description">
-            Get help with tasks, ask questions, or chat about anything!
+            Ask questions about stocks, get market insights, or chat about anything!
           </p>
         </div>
       </main>
+      
+      {/* Floating Chat Button - Global Access */}
+      <button 
+        className="floating-chat-button"
+        onClick={openGeneralChat}
+        title="Open AI Assistant"
+      >
+        💬
+      </button>
       
       {/* Chatbot - persistent across pages */}
       <ChatBot 
