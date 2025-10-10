@@ -1,7 +1,7 @@
 {
-  "name": "fullstack-react-python",
+  "name": "chatbot-poc-frontend",
   "version": "1.0.0",
-  "description": "Full-stack application with React frontend and Python backend",
+  "description": "React chatbot application with external .NET API integration",
   "main": "index.js",
   "scripts": {
     "start": "cd frontend && npm start",
@@ -13,19 +13,12 @@
   },
   "keywords": [
     "react",
-    "python",
-    "flask",
-    "fullstack",
+    "frontend",
     "chatbot",
-    "conversation-memory"
+    "external-api",
+    "conversation-memory",
+    "session-management"
   ],
   "author": "Developer Reference Implementation",
-  "license": "MIT",
-  "devDependencies": {
-    "concurrently": "^7.6.0"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^5.1.0"
-  }
+  "license": "MIT"
 }
