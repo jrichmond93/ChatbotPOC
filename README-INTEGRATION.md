@@ -10,11 +10,12 @@ This guide shows you how to integrate the advanced ChatBot component from this p
 
 ### What You're Adding
 - **Advanced ChatBot UI**: Draggable, resizable, minimizable chat interface
+- **Rich Markdown Rendering**: Professional formatting for bot responses with tables, lists, code blocks, and more
 - **Session Management**: Persistent conversations with integer session IDs
 - **Topic Limitations**: Automatic session locking after 3 unrelated topics
 - **External API Integration**: .NET API communication with robust error handling
 - **Cross-Page Persistence**: Chat stays open when navigating between pages
-- **Stock Context Integration**: Context-aware conversations (adaptable to your domain)
+- **Context Integration**: Context-aware conversations (adaptable to your domain)
 
 ### Architecture Pattern
 ```
@@ -51,13 +52,18 @@ Add these dependencies to your existing React app:
 
 ```bash
 cd YOUR_APP
-npm install axios
+npm install axios react-markdown remark-gfm
 ```
 
 If not already installed, you may also need:
 ```bash
 npm install react react-dom
 ```
+
+**Dependencies Explanation:**
+- `axios`: HTTP client for external API communication
+- `react-markdown`: Renders Markdown content in React components for rich bot responses
+- `remark-gfm`: GitHub Flavored Markdown plugin for tables, strikethrough, and task lists
 
 ---
 
@@ -373,6 +379,72 @@ const TYPING_DELAY = 1000; // Adjust typing simulation delay
 const INPUT_PLACEHOLDER = "Ask me anything about your domain...";
 ```
 
+### 5.3 Rich Markdown Rendering Features
+
+The ChatBot includes advanced Markdown rendering capabilities for professional bot responses:
+
+**Automatic Markdown Detection:**
+The ChatBot automatically detects when bot responses contain Markdown indicators and renders them appropriately:
+
+```javascript
+// The ChatBot detects these Markdown patterns automatically:
+// - Headers: ## Main Topic, ### Subtopic
+// - Bold text: **important text**
+// - Italic text: *emphasized text*
+// - Tables: | Column 1 | Column 2 |
+// - Lists: - bullet points, 1. numbered lists
+// - Code: `inline code` and ```code blocks```
+```
+
+**Supported Markdown Elements:**
+- **Headers**: H2 and H3 with professional styling
+- **Text Formatting**: Bold, italic, and inline code
+- **Lists**: Bulleted and numbered lists with proper indentation  
+- **Tables**: Full table support with hover effects and alternating row colors
+- **Blockquotes**: Styled quote blocks with left border
+- **Code Blocks**: Syntax highlighting with professional appearance
+
+**Customizing Markdown Styles:**
+All Markdown elements can be customized via CSS:
+
+```css
+/* Example: Customize table appearance */
+.message.bot .markdown-table {
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Example: Customize heading colors */
+.message.bot .markdown-heading {
+  color: #2c3e50;
+  font-weight: 600;
+  margin: 15px 0 8px 0;
+}
+
+/* Example: Customize code blocks */
+.message.bot .markdown-inline-code {
+  background-color: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+```
+
+**API Response Format for Markdown:**
+Ensure your external API returns responses with proper Markdown formatting:
+
+```javascript
+// Example API response with Markdown content:
+{
+  "response": "## Stock Analysis\n\n**AAPL** is showing strong performance:\n\n- Price: $150.25\n- Volume: 2.3M\n- **Recommendation**: BUY\n\n| Metric | Value | Change |\n|--------|-------|--------|\n| Price | $150.25 | +2.5% |\n| Volume | 2.3M | +15% |",
+  "sessionId": 123,
+  "conversationSummary": "Discussed AAPL stock performance"
+}
+```
+
 ---
 
 ## 🔧 Step 6: Backend Integration (Optional Flask Updates)
@@ -440,10 +512,12 @@ const API_CONFIG = {
 - [ ] **Cross-Page Persistence**: Chat stays open when navigating
 - [ ] **Context Integration**: Domain-specific chat buttons pass context
 - [ ] **API Communication**: Messages send/receive from external API
+- [ ] **Markdown Rendering**: Bot responses with tables, lists, and formatting display correctly
+- [ ] **Markdown Detection**: Auto-detection works for ##, **, *, |, - indicators
 - [ ] **Session Management**: Session ID increments and persists
 - [ ] **Topic Limitations**: Chat locks after 3 unrelated topics
 - [ ] **Error Handling**: Graceful handling of API failures
-- [ ] **Mobile Responsive**: Works on mobile devices
+- [ ] **Mobile Responsive**: Works on mobile devices and Markdown renders properly
 
 ### 7.2 Common Integration Issues
 
@@ -480,6 +554,34 @@ console.log('Context being passed:', contextData);
 /* Rename classes if needed to avoid conflicts */
 ```
 
+**Markdown Not Rendering:**
+```javascript
+// Verify react-markdown dependencies are installed
+npm list react-markdown remark-gfm
+
+// Check that imports are correct in ChatBot.js
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+// Ensure API responses include Markdown indicators
+// The ChatBot looks for: ##, **, *, |, - to trigger Markdown rendering
+console.log('Bot response:', botMessage); // Should contain Markdown syntax
+```
+
+**Markdown Styling Issues:**
+```css
+/* Ensure Markdown CSS is not being overridden */
+.message.bot .markdown-table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+
+/* Check for conflicting styles */
+.your-app .message.bot p {
+  /* May conflict with .markdown-paragraph */
+}
+```
+
 ---
 
 ## 📋 Step 8: Advanced Customization
@@ -505,6 +607,13 @@ const getContextualGreeting = () => {
             and priced at $${productContext.price}. What would you like to know?`;
   }
   return "Welcome! I can help you find products and answer questions about your order.";
+};
+
+// Example API response with rich Markdown for e-commerce
+const exampleEcommerceApiResponse = {
+  "response": "## Product Comparison\n\n**${productName}** details:\n\n- **Price**: $${price}\n- **Rating**: ⭐⭐⭐⭐⭐ (4.8/5)\n- **Availability**: ${availability}\n\n### Similar Products\n\n| Product | Price | Rating | Stock |\n|---------|-------|-----------|-------|\n| Product A | $299 | 4.5/5 | ✅ In Stock |\n| Product B | $349 | 4.7/5 | ⚠️ Low Stock |\n| Product C | $279 | 4.2/5 | ✅ In Stock |\n\n**Recommendation**: Based on your preferences, I'd suggest Product A for the best value.",
+  "sessionId": 123,
+  "conversationSummary": "Discussed product comparison and recommendations"
 };
 ```
 
@@ -775,6 +884,8 @@ CORS(app, resources={
 - [ ] Configure proper error logging for API failures
 - [ ] Test mobile responsiveness on production
 - [ ] Verify session persistence across page reloads
+- [ ] Confirm Markdown rendering works correctly in production build
+- [ ] Test rich content display (tables, lists, code blocks) on production
 
 ### Performance Optimization
 
@@ -786,7 +897,15 @@ const ChatBot = React.lazy(() => import('./components/ChatBot'));
 <Suspense fallback={<div>Loading chat...</div>}>
   {chatbotOpen && <ChatBot {...props} />}
 </Suspense>
+
+// Lazy load Markdown dependencies if needed
+const ReactMarkdown = React.lazy(() => import('react-markdown'));
 ```
+
+**Bundle Size Considerations:**
+- `react-markdown` + `remark-gfm` add ~50KB to bundle size
+- Consider code splitting if ChatBot is not used on all pages
+- Markdown rendering only activates when bot responses contain Markdown indicators
 
 ---
 
@@ -795,8 +914,10 @@ const ChatBot = React.lazy(() => import('./components/ChatBot'));
 - **ChatBot Component API**: See `ChatBot.js` for full prop documentation
 - **External API Integration**: See `externalApiConfig.js` for configuration options
 - **Styling Customization**: See `ChatBot.css` for theming variables
+- **Markdown Rendering**: Rich text formatting with react-markdown and GitHub Flavored Markdown
 - **Session Management**: Understanding sessionId and unrelatedTopicCount behavior
 - **Mobile Optimization**: Responsive design considerations for mobile devices
+- **Markdown CSS Classes**: Complete list of `.markdown-*` CSS classes for custom styling
 
 ---
 
