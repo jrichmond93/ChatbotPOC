@@ -1,7 +1,58 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import API_CONFIG from './externalApiConfig';
 import './ChatBot.css';
+
+// Component for rendering message content with Markdown support
+const MessageContent = ({ message }) => {
+  // Check if the message is from bot and potentially contains Markdown
+  const isBot = message.sender === 'bot';
+  const hasMarkdownIndicators = isBot && (
+    message.text.includes('##') || 
+    message.text.includes('**') || 
+    message.text.includes('*') ||
+    message.text.includes('|') ||
+    message.text.includes('- ')
+  );
+
+  if (hasMarkdownIndicators) {
+    return (
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Custom styling for different elements
+          h2: ({children}) => <h2 className="markdown-heading">{children}</h2>,
+          h3: ({children}) => <h3 className="markdown-subheading">{children}</h3>,
+          strong: ({children}) => <strong className="markdown-bold">{children}</strong>,
+          em: ({children}) => <em className="markdown-italic">{children}</em>,
+          ul: ({children}) => <ul className="markdown-list">{children}</ul>,
+          ol: ({children}) => <ol className="markdown-ordered-list">{children}</ol>,
+          li: ({children}) => <li className="markdown-list-item">{children}</li>,
+          table: ({children}) => <table className="markdown-table">{children}</table>,
+          thead: ({children}) => <thead className="markdown-thead">{children}</thead>,
+          tbody: ({children}) => <tbody className="markdown-tbody">{children}</tbody>,
+          th: ({children}) => <th className="markdown-th">{children}</th>,
+          td: ({children}) => <td className="markdown-td">{children}</td>,
+          blockquote: ({children}) => <blockquote className="markdown-quote">{children}</blockquote>,
+          code: ({children, className}) => {
+            const isInline = !className;
+            return isInline ? 
+              <code className="markdown-inline-code">{children}</code> :
+              <code className={`markdown-code-block ${className || ''}`}>{children}</code>;
+          },
+          p: ({children}) => <p className="markdown-paragraph">{children}</p>
+        }}
+      >
+        {message.text}
+      </ReactMarkdown>
+    );
+  }
+  
+  // Return plain text for user messages or bot messages without Markdown
+  return <span>{message.text}</span>;
+};
 
 const ChatBot = ({ 
   isOpen, 
@@ -463,7 +514,9 @@ const ChatBot = ({
               {currentMessages.map((message) => (
                 <div key={message.id} className={`message ${message.sender}`}>
                   <div className="message-content">
-                    <div className="message-text">{message.text}</div>
+                    <div className="message-text">
+                      <MessageContent message={message} />
+                    </div>
                     <div className="message-time">
                       {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
