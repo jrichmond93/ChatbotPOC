@@ -125,6 +125,7 @@
   border-radius: 18px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   position: relative;
+  text-align: left;
 }
 
 .message.user .message-content {
@@ -144,6 +145,7 @@
   line-height: 1.4;
   margin-bottom: 4px;
   white-space: pre-line;
+  text-align: left;
 }
 
 .message-time {
@@ -441,6 +443,7 @@
 .message.bot .markdown-paragraph {
   margin: 0.3em 0;
   line-height: 1.5;
+  text-align: left;
 }
 
 .message.bot .markdown-paragraph:first-child {
