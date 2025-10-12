@@ -441,8 +441,8 @@
 }
 
 .message.bot .markdown-paragraph {
-  margin: 0.3em 0;
-  line-height: 1.5;
+  margin: 0.15em 0;
+  line-height: 1.4;
   text-align: left;
 }
 
@@ -458,16 +458,16 @@
   font-size: 1.1em;
   font-weight: bold;
   color: #2c3e50;
-  margin: 0.8em 0 0.4em 0;
+  margin: 0.4em 0 0.2em 0;
   border-bottom: 2px solid #007bff;
-  padding-bottom: 0.2em;
+  padding-bottom: 0.1em;
 }
 
 .message.bot .markdown-subheading {
   font-size: 1.05em;
   font-weight: bold;
   color: #34495e;
-  margin: 0.6em 0 0.3em 0;
+  margin: 0.3em 0 0.15em 0;
 }
 
 .message.bot .markdown-bold {
@@ -481,24 +481,24 @@
 }
 
 .message.bot .markdown-list {
-  margin: 0.5em 0;
+  margin: 0.2em 0;
   padding-left: 1.2em;
 }
 
 .message.bot .markdown-ordered-list {
-  margin: 0.5em 0;
+  margin: 0.2em 0;
   padding-left: 1.2em;
 }
 
 .message.bot .markdown-list-item {
-  margin: 0.2em 0;
-  line-height: 1.4;
+  margin: 0.05em 0;
+  line-height: 1.3;
 }
 
 .message.bot .markdown-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 0.8em 0;
+  margin: 0.3em 0;
   font-size: 0.85em;
   border-radius: 6px;
   overflow: hidden;
@@ -534,8 +534,8 @@
 
 .message.bot .markdown-quote {
   border-left: 4px solid #007bff;
-  margin: 0.5em 0;
-  padding: 0.3em 0 0.3em 0.8em;
+  margin: 0.3em 0;
+  padding: 0.2em 0 0.2em 0.6em;
   background-color: rgba(0, 123, 255, 0.05);
   font-style: italic;
   color: #7f8c8d;
@@ -555,12 +555,12 @@
 .message.bot .markdown-code-block {
   background-color: #2d3748;
   color: #e2e8f0;
-  padding: 0.8em;
+  padding: 0.6em;
   border-radius: 6px;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.8em;
   overflow-x: auto;
-  margin: 0.5em 0;
+  margin: 0.3em 0;
   border: 1px solid #4a5568;
 }
 
